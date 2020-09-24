@@ -5,13 +5,16 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.pluralsight.candycoded.DB.CandyContract.CandyEntry;
 import com.pluralsight.candycoded.DB.CandyCursorAdapter;
@@ -33,11 +36,12 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+
         SQLiteDatabase db = candyDbHelper.getWritableDatabase();
         Cursor cursor = db.rawQuery("SELECT * FROM candy", null);
 
         final CandyCursorAdapter adapter = new CandyCursorAdapter(this, cursor);
-        ListView listView = (ListView)this.findViewById(R.id.list_view_candy);
+        ListView listView = (ListView) this.findViewById(R.id.list_view_candy);
 
         listView.setAdapter(adapter);
 
@@ -56,12 +60,14 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onFailure(int statusCode, Header[] headers, String response, Throwable throwable) {
                         Log.e("AsyncHttpClient", "response = " + response);
+                        addCandiesToDatabase(null);
                     }
 
                     @Override
                     public void onSuccess(int statusCode, Header[] headers, String response) {
                         Log.d("AsyncHttpClient", "response = " + response);
-                        Gson gson = new GsonBuilder().create();;
+                        Gson gson = new GsonBuilder().create();
+
                         candies = gson.fromJson(response, Candy[].class);
 
                         addCandiesToDatabase(candies);
@@ -79,11 +85,17 @@ public class MainActivity extends AppCompatActivity {
         inflater.inflate(R.menu.main, menu);
         return true;
     }
-    // ***
-    // TODO - Task 1 - Show Store Information Activity
-    // ***
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        Intent infoIntent = new Intent(this, InfoActivity.class);
+        infoIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(infoIntent);
+        return super.onOptionsItemSelected(item);
+    }
 
     private void addCandiesToDatabase(Candy[] candies) {
+
         SQLiteDatabase db = candyDbHelper.getWritableDatabase();
 
         for (Candy candy : candies) {
@@ -92,7 +104,6 @@ public class MainActivity extends AppCompatActivity {
             values.put(CandyEntry.COLUMN_NAME_PRICE, candy.price);
             values.put(CandyEntry.COLUMN_NAME_DESC, candy.description);
             values.put(CandyEntry.COLUMN_NAME_IMAGE, candy.image);
-
             db.insert(CandyEntry.TABLE_NAME, null, values);
         }
     }
